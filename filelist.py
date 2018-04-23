@@ -288,17 +288,54 @@ def traverse(path, visit_table, selected, stats, selectors, output_modes):
             print(cur_item)
 
 
-def main():
-  ERR_MSG_ILLEGAL_OPT = 'Illegal or conflicting command line option(s) was specified.'
-  ERR_MSG_ILLEGAL_ARG = 'An illegal argument was supplied to one of the options.'
-  ERR_MSG_PATH_NOT_DIR = 'One of the following supplied paths is non-existent or is not a directory'
+def print_dupl(selected, duplname, stats):
+  DUPL_BUCKET_SEPARATOR = '------'
 
+  buckets = {}
+
+  for visited_item in selected:
+    if duplname:
+      bucket_key = os.path.basename(visited_item)
+    else:
+      file = open(visited_item)
+      bucket_key = file.read()
+      file.close()
+
+    if not bucket_key in buckets:
+      buckets[bucket_key] = []
+
+    buckets[bucket_key].append(visited_item)
+
+  for name, bucket in buckets.iteritems():
+    if len(bucket) < 2:
+      continue
+
+    bucket.sort()
+
+    for path in bucket:
+      stats['list_count'] += 1
+      stats['list_size'] += os.path.getsize(path)
+
+      print(path)
+
+    print(DUPL_BUCKET_SEPARATOR)
+
+def print_stats(stats):
   STAT_MSG_VISIT_COUNT = 'Total number of files visited: {}'
   STAT_MSG_VISIT_SIZE = 'Total size of files visited: {} bytes'
   STAT_MSG_LIST_COUNT = 'Total number of files listed: {}'
   STAT_MSG_LIST_SIZE = 'Total size of files listed: {} bytes'
 
-  DUPL_BUCKET_SEPARATOR = '------'
+  print('')
+  print(STAT_MSG_VISIT_COUNT.format(stats['visit_count']))
+  print(STAT_MSG_VISIT_SIZE.format(stats['visit_size']))
+  print(STAT_MSG_LIST_COUNT.format(stats['list_count']))
+  print(STAT_MSG_LIST_SIZE.format(stats['list_size']))
+
+def main():
+  ERR_MSG_ILLEGAL_OPT = 'Illegal or conflicting command line option(s) was specified.'
+  ERR_MSG_ILLEGAL_ARG = 'An illegal argument was supplied to one of the options.'
+  ERR_MSG_PATH_NOT_DIR = 'One of the following supplied paths is non-existent or is not a directory'
 
   parsed = parse_args(sys.argv)
 
@@ -335,42 +372,10 @@ def main():
     traverse(path, visit_table, selected, stats, selectors, output_modes)
 
   if output_modes[CMD_OPT_DUPLNAME] or output_modes[CMD_OPT_DUPLCONT]:
-    buckets = {}
-
-    for visited_item in selected:
-      if output_modes[CMD_OPT_DUPLNAME]:
-        bucket_key = os.path.basename(visited_item)
-      else:
-        file = open(visited_item)
-        bucket_key = file.read()
-        file.close()
-
-      if not bucket_key in buckets:
-        buckets[bucket_key] = []
-
-      buckets[bucket_key].append(visited_item)
-
-    for name, bucket in buckets.iteritems():
-      if len(bucket) < 2:
-        continue
-
-      bucket.sort()
-
-      for path in bucket:
-        stats['list_count'] += 1
-        stats['list_size'] += os.path.getsize(path)
-
-        print(path)
-
-      print(DUPL_BUCKET_SEPARATOR)
-
+    print_dupl(selected, output_modes[CMD_OPT_DUPLNAME], stats)
 
   if output_modes[CMD_OPT_STATS]:
-    print('')
-    print(STAT_MSG_VISIT_COUNT.format(stats['visit_count']))
-    print(STAT_MSG_VISIT_SIZE.format(stats['visit_size']))
-    print(STAT_MSG_LIST_COUNT.format(stats['list_count']))
-    print(STAT_MSG_LIST_SIZE.format(stats['list_size']))
+    print_stats(stats)
 
 
 def main_wrapper():
