@@ -340,7 +340,7 @@ def print_stats(stats):
 
 def delete_files(files):
   for file in files:
-    os.remove(files)
+    os.remove(file)
 
 
 def main():
