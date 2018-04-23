@@ -106,6 +106,13 @@ def parse_args(argv):
     # duplcont and duplname wants file listing
     return False
 
+  if (output_modes[CMD_OPT_DUPLCONT] or output_modes[CMD_OPT_DUPLNAME]) and \
+     (operations[CMD_OPT_DELETE] or operations[CMD_OPT_ZIP]):
+    return False
+
+  if operations[CMD_OPT_DELETE] and operations[CMD_OPT_ZIP]:
+    return False
+
   return (selectors, operations, output_modes, paths)
 
 
@@ -297,7 +304,7 @@ def print_dupl(selected, duplname, stats):
     if duplname:
       bucket_key = os.path.basename(visited_item)
     else:
-      file = open(visited_item)
+      file = open(visited_item, 'rb')
       bucket_key = file.read()
       file.close()
 
@@ -307,9 +314,6 @@ def print_dupl(selected, duplname, stats):
     buckets[bucket_key].append(visited_item)
 
   for name, bucket in buckets.iteritems():
-    if len(bucket) < 2:
-      continue
-
     bucket.sort()
 
     for path in bucket:
@@ -319,6 +323,7 @@ def print_dupl(selected, duplname, stats):
       print(path)
 
     print(DUPL_BUCKET_SEPARATOR)
+
 
 def print_stats(stats):
   STAT_MSG_VISIT_COUNT = 'Total number of files visited: {}'
@@ -331,6 +336,12 @@ def print_stats(stats):
   print(STAT_MSG_VISIT_SIZE.format(stats['visit_size']))
   print(STAT_MSG_LIST_COUNT.format(stats['list_count']))
   print(STAT_MSG_LIST_SIZE.format(stats['list_size']))
+
+
+def delete_files(files):
+  for file in files:
+    os.remove(files)
+
 
 def main():
   ERR_MSG_ILLEGAL_OPT = 'Illegal or conflicting command line option(s) was specified.'
@@ -372,10 +383,15 @@ def main():
     traverse(path, visit_table, selected, stats, selectors, output_modes)
 
   if output_modes[CMD_OPT_DUPLNAME] or output_modes[CMD_OPT_DUPLCONT]:
-    print_dupl(selected, output_modes[CMD_OPT_DUPLNAME], stats)
+    print_dupl(sorted(selected) if output_modes[CMD_OPT_DUPLNAME] else selected,
+               output_modes[CMD_OPT_DUPLNAME],
+               stats)
 
   if output_modes[CMD_OPT_STATS]:
     print_stats(stats)
+
+  if operations[CMD_OPT_DELETE]:
+    delete_files(selected)
 
 
 def main_wrapper():
