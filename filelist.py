@@ -618,6 +618,7 @@ def main():
   ERR_MSG_ILLEGAL_OPT = 'Illegal or conflicting command line option(s) was specified.'
   ERR_MSG_ILLEGAL_ARG = 'An illegal argument was supplied to one of the options.'
   ERR_MSG_PATH_NOT_DIR = 'One of the following supplied paths is non-existent or is not a directory:'
+  ERR_MSG_TRAVERSE = 'The following problem occured while traversing: {}. Please try to exclude the problematic files.'
   ERR_MSG_ZIP_FAILED = 'The zipping operation failed.'
 
   parsed = parse_args(sys.argv)
@@ -657,7 +658,11 @@ def main():
     output_modes[CMD_OPT_NOFILELIST] = True
 
   for path in paths:
-    traverse(path, visit_table, selected, stats, selectors, output_modes)
+    try:
+      traverse(path, visit_table, selected, stats, selectors, output_modes)
+    except Exception as e:
+      print(ERR_MSG_TRAVERSE.format(e.message))
+      return
 
   if output_modes[CMD_OPT_DUPLNAME] or output_modes[CMD_OPT_DUPLCONT]:
     # print the duplicates in sorted order
