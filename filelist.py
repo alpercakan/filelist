@@ -14,7 +14,7 @@ import os
 from collections import deque
 from datetime import datetime
 import re
-
+import zipfile
 
 # Command line options
 CMD_OPT_BEFORE = '-before'
@@ -343,10 +343,36 @@ def delete_files(files):
     os.remove(file)
 
 
+def zip_files(files, zip_path):
+  if os.path.exists(zip_path):
+    return False
+
+  zip_file = zipfile.ZipFile(zip_path, 'w')
+  written_set = set()
+
+  for file in files:
+    orig_file_name = os.path.basename(file)
+    no_collision_name = orig_file_name
+
+    counter = 0
+
+    while no_collision_name in written_set:
+      counter += 1
+      no_collision_name = '({}) {}'.format(counter, no_collision_name)
+
+    zip_file.write(file, no_collision_name)
+    written_set.add(no_collision_name)
+
+  zip_file.close()
+
+  return True
+
+
 def main():
   ERR_MSG_ILLEGAL_OPT = 'Illegal or conflicting command line option(s) was specified.'
   ERR_MSG_ILLEGAL_ARG = 'An illegal argument was supplied to one of the options.'
-  ERR_MSG_PATH_NOT_DIR = 'One of the following supplied paths is non-existent or is not a directory'
+  ERR_MSG_PATH_NOT_DIR = 'One of the following supplied paths is non-existent or is not a directory:'
+  ERR_MSG_ZIP_FAILED = 'The zipping operation failed.'
 
   parsed = parse_args(sys.argv)
 
@@ -389,6 +415,10 @@ def main():
 
   if output_modes[CMD_OPT_STATS]:
     print_stats(stats)
+
+  if operations[CMD_OPT_ZIP]:
+    if not zip_files(selected, operations[CMD_OPT_ZIP]):
+      print(ERR_MSG_ZIP_FAILED)
 
   if operations[CMD_OPT_DELETE]:
     delete_files(selected)
